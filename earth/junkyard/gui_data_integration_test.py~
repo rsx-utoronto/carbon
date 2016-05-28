@@ -194,8 +194,8 @@ def plot_point_on_map(name, colour, latitude, longitude, heading = 0):
         rover_image = ImageTk.PhotoImage(image.rotate(angle))
         
         rover = display_gps.create_image(
-            x_coord,
-            y_coord,
+            ROVER_START_X,
+            ROVER_START_Y,
             image = rover_image)
            
         '''

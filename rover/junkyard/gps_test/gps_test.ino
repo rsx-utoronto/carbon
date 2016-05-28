@@ -10,7 +10,7 @@ long lat, lon;
 float LAT, LON;
 void setup(){
   Serial1.begin(9600); // GPS module
-  Serial.begin(115200);
+  Serial.begin(100);
 }
 void loop(){
   long lat, lon;
