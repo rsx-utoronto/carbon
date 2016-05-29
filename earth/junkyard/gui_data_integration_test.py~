@@ -15,8 +15,9 @@ from PIL import Image
 ##############################
 
 SERIAL_ON = False
-GPS_ON = True
-JOYSTICK_ON = False
+GPS_ON = False
+JOYSTICK_ON = True
+KEYBOARD_ON = True
 
 global gps
 ser = None
@@ -32,9 +33,12 @@ buffer_flushed = False
 
 NORTH_DEGREES = 0
 
-##############################
-###### JOYSTICK CONFIG #######
-##############################
+keyboard_input_array = ['0', '0', '0', '0', '0']
+joystick_input_array = ['0', '0', '0', '0']
+
+#########################################
+###### JOYSTICK / KEYBOARD CONFIG #######
+#########################################
 
 pygame.init()
 
@@ -54,13 +58,20 @@ def joystickGUIUpdate(axis_x, axis_y, axis_twist, axis_throttle):
         joystick_throttle,
         100, 90 - 80 * axis_throttle, 150, 90)
 
-def joystickInfo():
+def joystickPump():
+
+    TOPSPEED = 25
+    direction = "0"
 
     pygame.event.pump()
     
     buttons = joystick.get_numbuttons()
     for i in range( buttons ):
         button = joystick.get_button(i)
+
+    hats = joystick.get_numhats()
+    for i in range(hats):
+        hat = joystick.get_hat(i)
 
     axes = joystick.get_numaxes()
     axis_x = joystick.get_axis(0)
@@ -73,24 +84,7 @@ def joystickInfo():
         axis_y,
         axis_twist,
         axis_throttle)
-        
-    if SERIAL_ON:
 
-        joystickTransmit(
-            axis_x, 
-            axis_y,
-            axis_twist,
-            axis_throttle)
-
-    hats = joystick.get_numhats()
-    for i in range( hats ):
-        hat = joystick.get_hat(i)
-
-def joystickTransmit(axis_x, axis_y, axis_twist, axis_throttle):
-
-    TOPSPEED = 25
-    direction = "0"
-    
     if axis_y > 0.01: direction = "2" # Drive forward
     elif axis_y < -0.01: direction = "1" # Drive backwards
     else: direction = "0" # Don't move
@@ -104,8 +98,72 @@ def joystickTransmit(axis_x, axis_y, axis_twist, axis_throttle):
 
     elif axis_x < -0.01:
         left_speed = speed * (1 - math.pow(abs(axis_x), 2.5)) + 5
+     
+    joystick_input_array[0] = str(direction)
+    joystick_input_array[1] = str(round(right_speed, 2))
+    joystick_input_array[2] = str(round(left_speed, 2))
+    joystick_input_array[3] = str(speed)
+        
+def clearInputArrays():
 
-    ser.write('<%s,%s,%s,%s>' % (direction, right_speed, left_speed, speed))
+    for i in xrange(len(keyboard_input_array)):
+        keyboard_input_array[i] = '0' 
+        
+    for i in xrange(len(joystick_input_array)):
+        #joystick_input_array[i] = '0'                    
+        pass
+               
+def keyUp(e):
+    pass
+    
+def keyDown(e):
+    
+    key = e.char
+    
+    if key == '1':
+        keyboard_input_array[0] = '1'
+        
+    elif key == 'q':
+        keyboard_input_array[0] = '2'
+        
+    elif key == '2':
+        keyboard_input_array[1] = '1'
+        
+    elif key == 'w':
+        keyboard_input_array[1] = '2'        
+
+    elif key == '3':
+        keyboard_input_array[2] = '1'
+        
+    elif key == 'e':
+        keyboard_input_array[2] = '2'  
+
+    elif key == '4':
+        keyboard_input_array[3] = '1'
+        
+    elif key == 'r':
+        keyboard_input_array[3] = '2'
+        
+    elif key == '5':
+        keyboard_input_array[4] = '1'
+        
+    elif key == 't':
+        keyboard_input_array[4] = '2'   
+
+def commandSend():
+
+    if JOYSTICK_ON:
+        joystickPump()
+    
+    # Keyboard input handled by KeyDown()
+    # asynchronously   
+
+    keyboard_csv = str(keyboard_input_array).replace('[', '').replace(']','').replace('\n','').replace(' ', '')
+    joystick_csv = str(joystick_input_array).replace('[', '').replace(']','').replace('\n','').replace(' ', '')
+        
+    print "<%s,%s>" % (joystick_csv, keyboard_csv)    
+        
+    clearInputArrays()
 
 ##############################
 ######## GUI CONFIG ##########
@@ -194,8 +252,8 @@ def plot_point_on_map(name, colour, latitude, longitude, heading = 0):
         rover_image = ImageTk.PhotoImage(image.rotate(angle))
         
         rover = display_gps.create_image(
-            ROVER_START_X,
-            ROVER_START_Y,
+            x_coord,
+            y_coord,
             image = rover_image)
            
         '''
@@ -265,7 +323,10 @@ def task():
     global lat_start, long_start, heading
     
     if not buffer_flushed:
-        gps.flushInput()
+        
+        if GPS_ON: 
+            gps.flushInput()
+        
         buffer_flushed = True
     
     if GPS_ON:
@@ -291,11 +352,13 @@ def task():
                 print e
                 pass
 
-    if JOYSTICK_ON:
-        joystickInfo()
+    commandSend()
 
     # Reschedules itself to be called
     root.after(200, task)
+    
+root.bind("<KeyPress>", keyDown)
+root.bind("<KeyRelease>", keyUp)    
 
 # Execute update task loop
 root.after(5000, task)

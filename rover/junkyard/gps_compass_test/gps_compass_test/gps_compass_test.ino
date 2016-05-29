@@ -17,7 +17,7 @@ float LAT, LON;
 void setup()
 {
   Serial.begin(9600);
-  Serial1.begin(9600); // GPS module
+  Serial2.begin(9600); // GPS module
 
   while (!compass.begin())
   {
@@ -80,6 +80,7 @@ void loop()
   
   delay(100);
 }
+
 void getGPS(){
   bool newdata = false;
   unsigned long start = millis();
@@ -95,14 +96,16 @@ void getGPS(){
     gpsdump(gps);
   }
 }
+
 bool feedgps(){
-  while (Serial1.available())
+  while (Serial2.available())
   {
-    if (gps.encode(Serial1.read()))
+    if (gps.encode(Serial2.read()))
       return true;
   }
   return 0;
 }
+
 void gpsdump(TinyGPS &gps)
 {
   //byte month, day, hour, minute, second, hundredths;
