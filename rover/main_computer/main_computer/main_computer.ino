@@ -51,11 +51,10 @@ Servo arm_7;
 int NEUTRAL = 93;
 int spd, rt_spd, lt_spd, dir, twst_dir, twst_spd, prev_spd, prev_dir = 0;
 
-// Arm contro variables
+// Arm control variables
 int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val;
 
 // Sensor variables
-
 HMC5883L compass;
 unsigned long fix_age;
 TinyGPS gps;
@@ -127,8 +126,8 @@ void loop() {
       continue;
     }
 
-    if (received == '>') {
-
+    if (received == '>') { 
+      
       prev_spd = spd;
       prev_dir = dir;
 
@@ -369,7 +368,7 @@ void moveJoint(int joint_num, int dir) {
  }
   
 }
-
+/
 void smoothStop(int prev_dir, int prev_spd) {
 
   for(int i = prev_spd; i > 0; i--) {
@@ -405,7 +404,7 @@ void getGPS(){
   {
     gpsdump(gps);
     time_at_last_GPS_update = millis();
-    Serial.println("D
+    Serial.println("D"); 
   }
 }
 
