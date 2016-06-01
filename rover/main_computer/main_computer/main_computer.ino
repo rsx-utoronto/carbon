@@ -405,7 +405,7 @@ void getGPS(){
   {
     gpsdump(gps);
     time_at_last_GPS_update = millis();
-    Serial.println("Dumping");
+    Serial.println("D
   }
 }
 
