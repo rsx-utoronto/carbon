@@ -44,15 +44,21 @@ Servo arm_2; // Shoulder
 Servo arm_3; // End effector
 Servo arm_4; // Scroller
 Servo arm_5; // DC accessory
-Servo arm_6;
-Servo arm_7;
+
+Servo hand_1;
+Servo hand_2;
+Servo hand_3;
+
+int hand_lower_limit = 30;
+int hand_upper_limit = 150;
 
 // Drive system variables
 int NEUTRAL = 93;
 int spd, rt_spd, lt_spd, dir, twst_dir, twst_spd, prev_spd, prev_dir = 0;
 
 // Arm control variables
-int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val, arm_6_val, arm_7_val, arm_8_val;
+int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val, hand_1_val, hand_2_val, hand_3_val;
+int hand_1_pos, hand_2_pos, hand_3_pos = 0;
 
 // Sensor variables
 HMC5883L compass;
@@ -85,9 +91,10 @@ void setup() {
   arm_3.attach(5);
   arm_4.attach(4);
   arm_5.attach(3);
-  arm_6.attach(2);
-  arm_7.attach(1);
-  arm_8.attach(0);
+
+  hand_1.attach(44);
+  hand_2.attach(45);
+  hand_3.attach(46);
 
   // Compass setup
   while (!compass.begin()) {
@@ -144,16 +151,16 @@ void loop() {
       arm_3_val = getValue(inData, ',', 8).toInt();
       arm_4_val = getValue(inData, ',', 9).toInt();
       arm_5_val = getValue(inData, ',', 10).toInt();
-      arm_6_val = getValue(inData, ',', 11).toInt();
-      arm_7_val = getValue(inData, ',', 12).toInt();
-      arm_8_val = getValue(inData, ',', 13).toInt();
 
+      hand_1_val = getValue(inData, ',', 11).toInt();
+      hand_2_val = getValue(inData, ',', 12).toInt();
+      hand_3_val = getValue(inData, ',', 13).toInt();
 
       /*
       if ((prev_spd - spd) > 4) {
-        smoothStop(prev_dir, prev_spd);
-      }
-      */
+       smoothStop(prev_dir, prev_spd);
+       }
+       */
 
       if (dir != 0) {
         driveRover(dir, rt_spd, lt_spd);
@@ -167,10 +174,10 @@ void loop() {
       moveJoint(3, arm_3_val);
       moveJoint(4, arm_4_val);
       moveJoint(5, arm_5_val);
-      moveJoint(6, arm_6_val);
-      moveJoint(7, arm_7_val);
-      moveJoint(8, arm_8_val);
 
+      moveHand(1, hand_1_val);
+      moveHand(2, hand_2_val);
+      moveHand(3, hand_3_val);
 
       Serial.println(inData);
 
@@ -242,7 +249,7 @@ String getValue(String data, char separator, int index) {
 
   int found = 0;
   int strIndex[] = {
-    0, -1              };
+    0, -1                };
   int maxIndex = data.length()-1;
 
   for(int i=0; i<=maxIndex && found<=index; i++){
@@ -358,7 +365,6 @@ void moveJoint(int joint_num, int dir) {
  }
 
  switch(joint_num) {
-
   case 1:
     arm_1.write(NEUTRAL + joint_speed);
     break;
@@ -374,19 +380,42 @@ void moveJoint(int joint_num, int dir) {
   case 5:
     arm_5.write(NEUTRAL + joint_speed);
     break;
-  case 6:
-    arm_6.write(NEUTRAL + joint_speed);
-    break;
-  case 7:
-    arm_7.write(NEUTRAL + joint_speed);
-    break;
-  case 8:
-    arm_8.write(NEUTRAL + joint_speed);
-    break;
- }
-
 }
-/
+
+void moveHand(int hand_num, int dir) {
+
+  int increment = 0;
+
+  if (dir == 1) {
+    increment = -2;
+  }
+  else if (dir == 2) {
+    increment = 2;
+  }
+
+  switch(hand_num) {
+
+  case 1:
+    hand_1_pos += increment;
+    if (hand_1_pos > hand_upper_limit) { hand_1_pos = hand_upper_limit; }
+    else if (hand_1_pos < hand_lower_limit) { hand_1_pos = hand_lower_limit; }
+    hand_1.write(hand_1_pos);
+
+  case 2:
+    hand_2_pos += increment;
+    if (hand_2_pos > hand_upper_limit) { hand_2_pos = hand_upper_limit; }
+    else if (hand_2_pos < hand_lower_limit) { hand_2_pos = hand_lower_limit; }
+    hand_2.write(hand_2_pos);
+
+  case 3:
+    hand_3_pos += increment;
+    if (hand_3_pos > hand_upper_limit) { hand_3_pos = hand_upper_limit; }
+    else if (hand_3_pos < hand_lower_limit) { hand_3_pos = hand_lower_limit; }
+    hand_3.write(hand_3_pos);
+
+  }
+}
+
 void smoothStop(int prev_dir, int prev_spd) {
 
   for(int i = prev_spd; i > 0; i--) {
@@ -445,5 +474,6 @@ void gpsdump(TinyGPS &gps)
     feedgps(); // If we don't feed the gps during this long routine, we may drop characters and get checksum errors
   }
 }
+
 
 
