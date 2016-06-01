@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from Tkinter import *
 import time
 import serial
@@ -156,7 +154,25 @@ def keyDown(e):
         keyboard_input_array[4] = 1
         
     elif key == 't':
-        keyboard_input_array[4] = 2   
+        keyboard_input_array[4] = 2
+        
+    elif key == '8':
+        keyboard_input_array[5] = 1
+        
+    elif key == 'i':
+        keyboard_input_array[5] = 2
+        
+    elif key == '9':
+        keyboard_input_array[6] = 1
+        
+    elif key == 'o':
+        keyboard_input_array[6] = 2
+        
+    elif key == '0':
+        keyboard_input_array[7] = 1
+        
+    elif key == 'p':
+        keyboard_input_array[7] = 2                           
 
 def commandSend():
 
@@ -175,6 +191,9 @@ def commandSend():
         ser.write(command)
         
     clearInputArrays()
+=======
+from comms import *
+>>>>>>> 8f03b635f3c3471a64034ad390301958ddfa532b:earth/gui.py
 
 ##############################
 ######## GUI CONFIG ##########
@@ -217,10 +236,10 @@ joystick_axis_radius = 15
 joystick_axis_center = 42.5
 joystick_blip = display_joystick.create_oval(
     joystick_axis_center,
-    joystick_axis_center, 
-    joystick_axis_center + joystick_axis_radius, 
-    joystick_axis_center + joystick_axis_radius, 
-    width = 0, 
+    joystick_axis_center,
+    joystick_axis_center + joystick_axis_radius,
+    joystick_axis_center + joystick_axis_radius,
+    width = 0,
     fill = 'red')
 
 joystick_throttle = display_joystick.create_rectangle(
@@ -241,68 +260,68 @@ GPS_MAPPING_RES = 100000
 ROVER_DIMENSION = 10
 ROVER_START_X = 475
 ROVER_START_Y = 475
-     
+
 def plot_point_on_map(name, colour, latitude, longitude, heading = 0):
 
     global lat_start, long_start
     global rover, rover_image
-   
+
     x_coord = (latitude - lat_start) * GPS_MAPPING_RES + ROVER_START_X
-    y_coord = (longitude - long_start) * GPS_MAPPING_RES + ROVER_START_Y    
-    
+    y_coord = (longitude - long_start) * GPS_MAPPING_RES + ROVER_START_Y
+
     if name == 'rover':
-    
+
         try:
             display_gps.delete(rover)
         except Exception as e:
             pass
-            
+
         image = Image.open('../assets/rover.png')
         angle = heading
-        
+
         rover_image = ImageTk.PhotoImage(image.rotate(angle))
-        
+
         rover = display_gps.create_image(
             x_coord,
             y_coord,
             image = rover_image)
-           
+
         '''
         rover = display_gps.create_oval(
             ROVER_START_X,
-            ROVER_START_Y, 
+            ROVER_START_Y,
             ROVER_START_X + ROVER_DIMENSION,
             ROVER_START_Y + ROVER_DIMENSION,
             width = 0,
             fill = 'red')
          '''
-            
+
          # display_gps.coords(rover, 990, 990, 1000, 1000)
-         
-    elif latitude != 0.0 and longitude != 0.0:    
+
+    elif latitude != 0.0 and longitude != 0.0:
 
         display_gps.create_oval(
                 x_coord,
-                y_coord, 
+                y_coord,
                 x_coord + ROVER_DIMENSION,
                 y_coord + ROVER_DIMENSION,
                 width = 0,
                 fill = colour)
-            
+
 def plot_waypoints(filename):
 
     with open(filename) as f:
         waypoints = f.readlines()
-        
+
     for waypoint in waypoints:
-    
+
         data = waypoint.replace('\n', '').split(',')
         name = data[0]
         latitude = float(data[1])
         longitude = float(data[2])
 
         plot_point_on_map(name, 'green', latitude, longitude)
-        
+
 ##############################
 ########### TASKS ############
 ##############################
@@ -315,11 +334,11 @@ def init():
     if JOYSTICK_ON:
 
         # Initialize the joystick (Logitech Extreme3D Pro)
-        pygame.joystick.init()    
+        pygame.joystick.init()
         joystick = pygame.joystick.Joystick(0)
-        joystick.init()    
+        joystick.init()
 
-    if SERIAL_ON: 
+    if SERIAL_ON:
         ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
         ser.flushInput()
 
@@ -328,25 +347,25 @@ def task():
 
     global ser, joystick, buffer_flushed
     global lat_start, long_start, heading
-    
+
     if not buffer_flushed:
-        
-        if SERIAL_ON: 
+
+        if SERIAL_ON:
             ser.flushInput()
-        
+
         buffer_flushed = True
-    
+
     if SERIAL_ON:
-    
+
         ser_data = ser.readline().replace('\r\n','').split(',')
         if len(ser_data) > 2:
             display_raw.insert(0, str(ser_data))
-            
+
             try:
                 latitude = round(float(ser_data[0]), 5)
                 longitude = round(float(ser_data[1]), 5)
                 heading = int(float(ser_data[2]))
-                
+
                 if lat_start == 0 and long_start == 0:
                         lat_start = latitude
                         long_start = longitude
@@ -355,19 +374,19 @@ def task():
                 else:
                     plot_point_on_map('rover', 'black', latitude, longitude, heading = heading)
                     plot_point_on_map('path', 'gray', latitude, longitude)
-                    
+
             except Exception as e:
                 print e
                 pass
-    
+
     # Compile packet of data to send
     commandSend()
 
     # Reschedules itself to be called
     root.after(200, task)
-    
+
 root.bind("<KeyPress>", keyDown)
-root.bind("<KeyRelease>", keyUp)    
+root.bind("<KeyRelease>", keyUp)
 
 # Execute update task loop
 root.after(5000, task)
