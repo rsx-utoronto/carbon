@@ -30,7 +30,7 @@ buffer_flushed = False
 #TODO Setting for north for rover location
 NORTH_DEGREES = 0
 
-keyboard_input_array = [0, 0, 0, 0, 0]
+keyboard_input_array = [0, 0, 0, 0, 0, 0, 0, 0]
 joystick_input_array = [0, 0, 0, 0, 0, 0]
 
 #########################################
@@ -156,7 +156,25 @@ def keyDown(e):
         keyboard_input_array[4] = 1
         
     elif key == 't':
-        keyboard_input_array[4] = 2   
+        keyboard_input_array[4] = 2
+        
+    elif key == '8':
+        keyboard_input_array[5] = 1
+        
+    elif key == 'i':
+        keyboard_input_array[5] = 2
+        
+    elif key == '9':
+        keyboard_input_array[6] = 1
+        
+    elif key == 'o':
+        keyboard_input_array[6] = 2
+        
+    elif key == '0':
+        keyboard_input_array[7] = 1
+        
+    elif key == 'p':
+        keyboard_input_array[7] = 2                           
 
 def commandSend():
 

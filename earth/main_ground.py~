@@ -30,7 +30,7 @@ buffer_flushed = False
 #TODO Setting for north for rover location
 NORTH_DEGREES = 0
 
-keyboard_input_array = [0, 0, 0, 0, 0]
+keyboard_input_array = [0, 0, 0, 0, 0, 0, 0, 0]
 joystick_input_array = [0, 0, 0, 0, 0, 0]
 
 #########################################
@@ -350,7 +350,7 @@ def task():
                 if lat_start == 0 and long_start == 0:
                         lat_start = latitude
                         long_start = longitude
-                        plot_waypoints('utias.waypoints')
+                        plot_waypoints('junkyard/utias.waypoints')
 
                 else:
                     plot_point_on_map('rover', 'black', latitude, longitude, heading = heading)
