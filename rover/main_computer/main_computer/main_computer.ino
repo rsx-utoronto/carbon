@@ -13,7 +13,7 @@
  ******   **********  ******
  * 13 * ************* * 12 *
  ******   **********  ******
- ********** 
+ **********
  ******   **********  ******
  * 11 * ************* * 10 *
  ******   **********  ******
@@ -52,7 +52,7 @@ int NEUTRAL = 93;
 int spd, rt_spd, lt_spd, dir, twst_dir, twst_spd, prev_spd, prev_dir = 0;
 
 // Arm control variables
-int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val;
+int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val, arm_6_val, arm_7_val, arm_8_val;
 
 // Sensor variables
 HMC5883L compass;
@@ -69,7 +69,7 @@ void setup() {
   // Starting serial connections
   Serial.begin(9600); // Local debugging
   Serial1.begin(9600); // Main telemetry IO
-  Serial2.begin(9600); // GPS module  
+  Serial2.begin(9600); // GPS module
 
   // Drive signal setup
   wheel_fl.attach(13);
@@ -87,6 +87,7 @@ void setup() {
   arm_5.attach(3);
   arm_6.attach(2);
   arm_7.attach(1);
+  arm_8.attach(0);
 
   // Compass setup
   while (!compass.begin()) {
@@ -98,7 +99,7 @@ void setup() {
   compass.setMeasurementMode(HMC5883L_CONTINOUS);
   compass.setDataRate(HMC5883L_DATARATE_30HZ);
   compass.setSamples(HMC5883L_SAMPLES_8);
-  compass.setOffset(0, 0);  
+  compass.setOffset(0, 0);
 }
 
 void loop() {
@@ -114,7 +115,7 @@ void loop() {
     if (received == '<') {
       keep_reading = true;
       inData = "";
-      
+
       if (sent_counter >= 5) {
         sent_counter = 0;
         sendData();
@@ -122,12 +123,12 @@ void loop() {
       else {
         sent_counter++;
       }
-      
+
       continue;
     }
 
-    if (received == '>') { 
-      
+    if (received == '>') {
+
       prev_spd = spd;
       prev_dir = dir;
 
@@ -143,35 +144,43 @@ void loop() {
       arm_3_val = getValue(inData, ',', 8).toInt();
       arm_4_val = getValue(inData, ',', 9).toInt();
       arm_5_val = getValue(inData, ',', 10).toInt();
-      
+      arm_6_val = getValue(inData, ',', 11).toInt();
+      arm_7_val = getValue(inData, ',', 12).toInt();
+      arm_8_val = getValue(inData, ',', 13).toInt();
+
+
       /*
       if ((prev_spd - spd) > 4) {
-        smoothStop(prev_dir, prev_spd); 
+        smoothStop(prev_dir, prev_spd);
       }
       */
-      
+
       if (dir != 0) {
-        driveRover(dir, rt_spd, lt_spd);   
+        driveRover(dir, rt_spd, lt_spd);
       }
       else {
-        twistRover(twst_dir, twst_spd); 
+        twistRover(twst_dir, twst_spd);
       }
-      
+
       moveJoint(1, arm_1_val);
       moveJoint(2, arm_2_val);
       moveJoint(3, arm_3_val);
       moveJoint(4, arm_4_val);
       moveJoint(5, arm_5_val);
-      
+      moveJoint(6, arm_6_val);
+      moveJoint(7, arm_7_val);
+      moveJoint(8, arm_8_val);
+
+
       Serial.println(inData);
-      
+
       keep_reading = false;
       inData = "";
 
     }
 
     if (keep_reading == true) {
-      inData += received; 
+      inData += received;
     }
 
   }
@@ -199,7 +208,7 @@ void sendData() {
     heading -= 2 * PI;
   }
 
-  float headingDegrees = heading * 180/M_PI; 
+  float headingDegrees = heading * 180/M_PI;
 
   // GPS CODE
 
@@ -214,15 +223,15 @@ void sendData() {
 
   Serial1.print(LAT/100000,7);
   Serial1.print(",");
-  Serial1.print(LON/100000,7);  
-  Serial1.print(",");  
+  Serial1.print(LON/100000,7);
+  Serial1.print(",");
   Serial1.println(headingDegrees);
-  
+
   Serial.print(LAT/100000,7);
   Serial.print(",");
-  Serial.print(LON/100000,7);  
-  Serial.print(",");  
-  Serial.println(headingDegrees);  
+  Serial.print(LON/100000,7);
+  Serial.print(",");
+  Serial.println(headingDegrees);
 
 }
 
@@ -249,7 +258,7 @@ String getValue(String data, char separator, int index) {
 }
 
 void twistRover(int dir, int spd) {
-  
+
   switch(dir) {
 
   case 0:
@@ -259,7 +268,7 @@ void twistRover(int dir, int spd) {
     wheel_bl.write(NEUTRAL);
 
     wheel_fr.write(NEUTRAL);
-    wheel_cr.write(NEUTRAL);    
+    wheel_cr.write(NEUTRAL);
     wheel_br.write(NEUTRAL);
 
     break;
@@ -271,7 +280,7 @@ void twistRover(int dir, int spd) {
     wheel_bl.write(NEUTRAL - spd);
 
     wheel_fr.write(NEUTRAL - spd);
-    wheel_cr.write(NEUTRAL);    
+    wheel_cr.write(NEUTRAL);
     wheel_br.write(NEUTRAL - spd);
 
     break;
@@ -283,7 +292,7 @@ void twistRover(int dir, int spd) {
     wheel_bl.write(NEUTRAL + spd);
 
     wheel_fr.write(NEUTRAL + spd);
-    wheel_cr.write(NEUTRAL);    
+    wheel_cr.write(NEUTRAL);
     wheel_br.write(NEUTRAL + spd);
 
     break;
@@ -293,7 +302,7 @@ void twistRover(int dir, int spd) {
 }
 
 void driveRover(int dir, int rt_spd, int lt_spd) {
-  
+
   switch(dir) {
 
   case 0:
@@ -303,7 +312,7 @@ void driveRover(int dir, int rt_spd, int lt_spd) {
     wheel_bl.write(NEUTRAL);
 
     wheel_fr.write(NEUTRAL);
-    wheel_cr.write(NEUTRAL);    
+    wheel_cr.write(NEUTRAL);
     wheel_br.write(NEUTRAL);
 
     break;
@@ -315,7 +324,7 @@ void driveRover(int dir, int rt_spd, int lt_spd) {
     wheel_bl.write(NEUTRAL - lt_spd);
 
     wheel_fr.write(NEUTRAL + rt_spd);
-    wheel_cr.write(NEUTRAL + rt_spd);    
+    wheel_cr.write(NEUTRAL + rt_spd);
     wheel_br.write(NEUTRAL + rt_spd);
 
     break;
@@ -327,7 +336,7 @@ void driveRover(int dir, int rt_spd, int lt_spd) {
     wheel_bl.write(NEUTRAL + lt_spd);
 
     wheel_fr.write(NEUTRAL - rt_spd);
-    wheel_cr.write(NEUTRAL - rt_spd);    
+    wheel_cr.write(NEUTRAL - rt_spd);
     wheel_br.write(NEUTRAL - rt_spd);
 
     break;
@@ -337,36 +346,45 @@ void driveRover(int dir, int rt_spd, int lt_spd) {
 }
 
 void moveJoint(int joint_num, int dir) {
- 
+
  int increment = 0;
  int joint_speed = 0;
- 
+
  if (dir == 1) {
    joint_speed = -10;
  }
  else if (dir == 2) {
    joint_speed = 10;
  }
-  
+
  switch(joint_num) {
-  
+
   case 1:
     arm_1.write(NEUTRAL + joint_speed);
-    
+    break;
   case 2:
     arm_2.write(NEUTRAL + joint_speed);
-    
+    break;
   case 3:
-    arm_3.write(NEUTRAL + joint_speed);    
-
+    arm_3.write(NEUTRAL + joint_speed);
+    break;
   case 4:
-    arm_4.write(NEUTRAL + joint_speed);  
-  
+    arm_4.write(NEUTRAL + joint_speed);
+    break;
   case 5:
-    arm_5.write(NEUTRAL + joint_speed);    
-   
+    arm_5.write(NEUTRAL + joint_speed);
+    break;
+  case 6:
+    arm_6.write(NEUTRAL + joint_speed);
+    break;
+  case 7:
+    arm_7.write(NEUTRAL + joint_speed);
+    break;
+  case 8:
+    arm_8.write(NEUTRAL + joint_speed);
+    break;
  }
-  
+
 }
 /
 void smoothStop(int prev_dir, int prev_spd) {
@@ -397,14 +415,14 @@ void getGPS(){
     Serial.println("gps update");
     if (feedgps ()){
       Serial.println("feed is true");
-      newdata = true; 
+      newdata = true;
     }
   }
   if (newdata)
   {
     gpsdump(gps);
     time_at_last_GPS_update = millis();
-    Serial.println("D"); 
+    Serial.println("D");
   }
 }
 

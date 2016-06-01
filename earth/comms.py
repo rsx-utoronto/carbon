@@ -30,7 +30,7 @@ buffer_flushed = False
 #TODO Setting for north for rover location
 NORTH_DEGREES = 0
 
-keyboard_input_array = [0, 0, 0, 0, 0]
+keyboard_input_array = [0] * 8
 joystick_input_array = [0, 0, 0, 0, 0, 0]
 
 #########################################
@@ -112,51 +112,29 @@ def joystickPump():
     joystick_input_array[4] = twist_dir
     joystick_input_array[5] = twist_speed
 
-def clearInputArrays():
+# def clearInputArrays():
 
-    for i in xrange(len(keyboard_input_array)):
-        keyboard_input_array[i] = 0
+#     for i in xrange(len(keyboard_input_array)):
+#         keyboard_input_array[i] = 0
 
-    for i in xrange(len(joystick_input_array)):
-        #joystick_input_array[i] = 0
-        pass
+#     for i in xrange(len(joystick_input_array)):
+#         #joystick_input_array[i] = 0
+#         pass
 
 def keyUp(e):
-    pass
+    key = e.char
+    for index, (cw_key, ccw_key) in enumerate(zip(list('12345890'), list('qwertyiop'))):
+        if key == cw_key or key == ccw_key:
+            keyboard_input_array[index] = 0
 
 def keyDown(e):
-
     key = e.char
 
-    if key == '1':
-        keyboard_input_array[0] = 1
-
-    elif key == 'q':
-        keyboard_input_array[0] = 2
-
-    elif key == '2':
-        keyboard_input_array[1] = 1
-
-    elif key == 'w':
-        keyboard_input_array[1] = 2
-
-    elif key == '3':
-        keyboard_input_array[2] = 1
-
-    elif key == 'e':
-        keyboard_input_array[2] = 2
-
-    elif key == '4':
-        keyboard_input_array[3] = 1
-
-    elif key == 'r':
-        keyboard_input_array[3] = 2
-
-    elif key == '5':
-        keyboard_input_array[4] = 1
-
-    elif key == 't':
-        keyboard_input_array[4] = 2
+    for index, (cw_key, ccw_key) in enumerate(zip(list('12345890'), list('qwertyiop'))):
+        if key == cw_key:
+            keyboard_input_array[index] = 1
+        elif key == ccw_key:
+            keyboard_input_array[index] = 2
 
 def commandSend():
 
@@ -174,4 +152,4 @@ def commandSend():
     if SERIAL_ON:
         ser.write(command)
 
-    clearInputArrays()
+    # clearInputArrays()
