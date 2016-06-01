@@ -14,7 +14,7 @@ from PIL import Image
 ######## BASIC CONFIG ########
 ##############################
 
-SERIAL_ON = False
+SERIAL_ON = True
 GPS_ON = False
 JOYSTICK_ON = True
 KEYBOARD_ON = True
@@ -26,15 +26,15 @@ joystick = None
 gps_serial_port = '/dev/ttyACM0'
 gps_baud = 9600
 
-ser_serial_port = '/dev/ttyUSB0'
+ser_serial_port = '/dev/ttyUSB1'
 ser_baud = 9600
 
 buffer_flushed = False
 
 NORTH_DEGREES = 0
 
-keyboard_input_array = ['0', '0', '0', '0', '0']
-joystick_input_array = ['0', '0', '0', '0']
+keyboard_input_array = [0, 0, 0, 0, 0]
+joystick_input_array = [0, 0, 0, 0, 0, 0]
 
 #########################################
 ###### JOYSTICK / KEYBOARD CONFIG #######
@@ -61,7 +61,7 @@ def joystickGUIUpdate(axis_x, axis_y, axis_twist, axis_throttle):
 def joystickPump():
 
     TOPSPEED = 25
-    direction = "0"
+    direction = 0
 
     pygame.event.pump()
     
@@ -85,8 +85,8 @@ def joystickPump():
         axis_twist,
         axis_throttle)
 
-    if axis_y > 0.01: direction = "2" # Drive forward
-    elif axis_y < -0.01: direction = "1" # Drive backwards
+    if axis_y > 0.01: direction = 2 # Drive forward
+    elif axis_y < -0.01: direction = 1 # Drive backwards
     else: direction = "0" # Don't move
 
     speed = int(TOPSPEED * abs(axis_y))
@@ -94,23 +94,34 @@ def joystickPump():
     right_speed = speed
 
     if axis_x > 0.01:
-        right_speed = speed * (1 - math.pow(abs(axis_x), 2.5)) + 5
+        right_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
 
     elif axis_x < -0.01:
-        left_speed = speed * (1 - math.pow(abs(axis_x), 2.5)) + 5
+        left_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
+        
+    twist_dir = 0
+    twist_speed = abs(axis_twist) * TOPSPEED
+    
+    if axis_twist > 0.25:
+        twist_dir = 1
+        
+    elif axis_twist < -0.25:
+        twist_dir = 2
      
-    joystick_input_array[0] = str(direction)
-    joystick_input_array[1] = str(round(right_speed, 2))
-    joystick_input_array[2] = str(round(left_speed, 2))
-    joystick_input_array[3] = str(speed)
+    joystick_input_array[0] = direction
+    joystick_input_array[1] = round(right_speed, 2)
+    joystick_input_array[2] = round(left_speed, 2)
+    joystick_input_array[3] = speed
+    joystick_input_array[4] = twist_dir
+    joystick_input_array[5] = twist_speed
         
 def clearInputArrays():
 
     for i in xrange(len(keyboard_input_array)):
-        keyboard_input_array[i] = '0' 
+        keyboard_input_array[i] = 0
         
     for i in xrange(len(joystick_input_array)):
-        #joystick_input_array[i] = '0'                    
+        #joystick_input_array[i] = 0                   
         pass
                
 def keyUp(e):
@@ -121,34 +132,34 @@ def keyDown(e):
     key = e.char
     
     if key == '1':
-        keyboard_input_array[0] = '1'
+        keyboard_input_array[0] = 1
         
     elif key == 'q':
-        keyboard_input_array[0] = '2'
+        keyboard_input_array[0] = 2
         
     elif key == '2':
-        keyboard_input_array[1] = '1'
+        keyboard_input_array[1] = 1
         
     elif key == 'w':
-        keyboard_input_array[1] = '2'        
+        keyboard_input_array[1] = 2
 
     elif key == '3':
-        keyboard_input_array[2] = '1'
+        keyboard_input_array[2] = 1
         
     elif key == 'e':
-        keyboard_input_array[2] = '2'  
+        keyboard_input_array[2] = 2
 
     elif key == '4':
-        keyboard_input_array[3] = '1'
+        keyboard_input_array[3] = 1
         
     elif key == 'r':
-        keyboard_input_array[3] = '2'
+        keyboard_input_array[3] = 2
         
     elif key == '5':
-        keyboard_input_array[4] = '1'
+        keyboard_input_array[4] = 1
         
     elif key == 't':
-        keyboard_input_array[4] = '2'   
+        keyboard_input_array[4] = 2   
 
 def commandSend():
 
@@ -161,7 +172,10 @@ def commandSend():
     keyboard_csv = str(keyboard_input_array).replace('[', '').replace(']','').replace('\n','').replace(' ', '')
     joystick_csv = str(joystick_input_array).replace('[', '').replace(']','').replace('\n','').replace(' ', '')
         
-    print "<%s,%s>" % (joystick_csv, keyboard_csv)    
+    command = "<%s,%s>" % (joystick_csv, keyboard_csv)    
+    
+    if SERIAL_ON:
+        ser.write(command)
         
     clearInputArrays()
 
@@ -309,8 +323,8 @@ def init():
         joystick.init()    
 
     if SERIAL_ON: 
-        ser = serial.Serial(ser_serial_port, ser_baud)
-        ser.flush()
+        ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
+        ser.flushInput()
         
     if GPS_ON:
         gps = serial.Serial(gps_serial_port, gps_baud)
@@ -324,20 +338,23 @@ def task():
     
     if not buffer_flushed:
         
-        if GPS_ON: 
-            gps.flushInput()
+        if SERIAL_ON: 
+            ser.flushInput()
         
         buffer_flushed = True
     
-    if GPS_ON:
-        gps_data = gps.readline().replace('\r\n','').split(',')
-        if len(gps_data) == 3:
-            display_raw.insert(0, str(gps_data))
+    if SERIAL_ON:
+    
+        ser_data = ser.readline().replace('\r\n','').split(',')
+        if len(ser_data) > 2:
+            display_raw.insert(0, str(ser_data))
             
             try:
-                latitude = round(float(gps_data[0]), 5)
-                longitude = round(float(gps_data[1]), 5)
-                heading = int(float(gps_data[2]))
+                latitude = round(float(ser_data[0]), 5)
+                longitude = round(float(ser_data[1]), 5)
+                heading = int(float(ser_data[2]))
+                
+                print heading
                 
                 if lat_start == 0 and long_start == 0:
                         lat_start = latitude
@@ -351,7 +368,8 @@ def task():
             except Exception as e:
                 print e
                 pass
-
+    
+    # Compile packet of data to send
     commandSend()
 
     # Reschedules itself to be called

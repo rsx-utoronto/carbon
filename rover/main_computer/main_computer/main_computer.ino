@@ -10,23 +10,25 @@
 
 /*
             ****
-******   **********  ******
-* 13 * ************* * 12 *
-******   **********  ******
-         ********** 
-******   **********  ******
-* 11 * ************* * 10 *
-******   **********  ******
-         **********
-******   **********  ******
-* 09 * ************* * 08 *
-******   **********  ******
-            ****
-*/
+ ******   **********  ******
+ * 13 * ************* * 12 *
+ ******   **********  ******
+ ********** 
+ ******   **********  ******
+ * 11 * ************* * 10 *
+ ******   **********  ******
+ **********
+ ******   **********  ******
+ * 09 * ************* * 08 *
+ ******   **********  ******
+ ****
+ */
 
 // General purpose variables
 String inData;
 boolean keep_reading = false;
+int sent_counter = 0;
+unsigned int time_at_last_GPS_update = 0;
 
 // Motor pins
 Servo wheel_fl;
@@ -37,17 +39,20 @@ Servo wheel_bl;
 Servo wheel_br;
 
 // Arm pins
-Servo arm_1;
-Servo arm_2;
-Servo arm_3;
-Servo arm_4;
-Servo arm_5;
+Servo arm_1; // Elbow
+Servo arm_2; // Shoulder
+Servo arm_3; // End effector
+Servo arm_4; // Scroller
+Servo arm_5; // DC accessory
 Servo arm_6;
 Servo arm_7;
 
 // Drive system variables
 int NEUTRAL = 93;
-int spd, rt_spd, lt_spd, dir, prev_spd, prev_dir = 0;
+int spd, rt_spd, lt_spd, dir, twst_dir, twst_spd, prev_spd, prev_dir = 0;
+
+// Arm contro variables
+int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val;
 
 // Sensor variables
 
@@ -74,7 +79,7 @@ void setup() {
   wheel_cr.attach(10);
   wheel_bl.attach(9);
   wheel_br.attach(8);
-  
+
   // Arm signal setup
   arm_1.attach(7);
   arm_2.attach(6);
@@ -82,14 +87,14 @@ void setup() {
   arm_4.attach(4);
   arm_5.attach(3);
   arm_6.attach(2);
-  arm_7.attach(1)
-  
+  arm_7.attach(1);
+
   // Compass setup
   while (!compass.begin()) {
-    Serial.println("Could not find a valid HMC5883L sensor, check wiring!");
+    Serial.println("No compass detected");
     delay(500);
   }
-  
+
   compass.setRange(HMC5883L_RANGE_1_3GA);
   compass.setMeasurementMode(HMC5883L_CONTINOUS);
   compass.setDataRate(HMC5883L_DATARATE_30HZ);
@@ -98,11 +103,11 @@ void setup() {
 }
 
 void loop() {
-  
+
   ////////////////////
   ////// INPUT ///////
   ////////////////////
-  
+
   while (Serial1.available() > 0)
   {
     char received = Serial1.read();
@@ -110,7 +115,15 @@ void loop() {
     if (received == '<') {
       keep_reading = true;
       inData = "";
-      send_data();
+      
+      if (sent_counter >= 5) {
+        sent_counter = 0;
+        sendData();
+      }
+      else {
+        sent_counter++;
+      }
+      
       continue;
     }
 
@@ -123,14 +136,36 @@ void loop() {
       rt_spd = getValue(inData, ',', 1).toInt();
       lt_spd = getValue(inData, ',', 2).toInt();
       spd = getValue(inData, ',', 3).toInt();
+      twst_dir = getValue(inData, ',', 4).toInt();
+      twst_spd = getValue(inData, ',', 5).toInt();
+
+      arm_1_val = getValue(inData, ',', 6).toInt();
+      arm_2_val = getValue(inData, ',', 7).toInt();
+      arm_3_val = getValue(inData, ',', 8).toInt();
+      arm_4_val = getValue(inData, ',', 9).toInt();
+      arm_5_val = getValue(inData, ',', 10).toInt();
       
+      /*
       if ((prev_spd - spd) > 4) {
         smoothStop(prev_dir, prev_spd); 
       }
-
-      driveRover(dir, rt_spd, lt_spd);       
-
+      */
+      
+      if (dir != 0) {
+        driveRover(dir, rt_spd, lt_spd);   
+      }
+      else {
+        twistRover(twst_dir, twst_spd); 
+      }
+      
+      moveJoint(1, arm_1_val);
+      moveJoint(2, arm_2_val);
+      moveJoint(3, arm_3_val);
+      moveJoint(4, arm_4_val);
+      moveJoint(5, arm_5_val);
+      
       Serial.println(inData);
+      
       keep_reading = false;
       inData = "";
 
@@ -139,17 +174,17 @@ void loop() {
     if (keep_reading == true) {
       inData += received; 
     }
-    
+
   }
-  
+
 }
 
-void send_data() {
+void sendData() {
 
   /////////////////////
   ////// OUTPUT ///////
   /////////////////////
-  
+
   // COMPASS CODE
 
   Vector norm = compass.readNormalize();
@@ -166,7 +201,7 @@ void send_data() {
   }
 
   float headingDegrees = heading * 180/M_PI; 
-  
+
   // GPS CODE
 
   long lat, lon;
@@ -175,15 +210,21 @@ void send_data() {
   unsigned short sentences, failed_checksum;
   gps.get_position(&lat, &lon, &fix_age);
   getGPS();
-  
+
   // DATA PACKET
-  
+
   Serial1.print(LAT/100000,7);
   Serial1.print(",");
   Serial1.print(LON/100000,7);  
   Serial1.print(",");  
   Serial1.println(headingDegrees);
   
+  Serial.print(LAT/100000,7);
+  Serial.print(",");
+  Serial.print(LON/100000,7);  
+  Serial.print(",");  
+  Serial.println(headingDegrees);  
+
 }
 
 // Pass in a string, seperator, and index you want, and get that value
@@ -193,7 +234,7 @@ String getValue(String data, char separator, int index) {
 
   int found = 0;
   int strIndex[] = {
-    0, -1            };
+    0, -1              };
   int maxIndex = data.length()-1;
 
   for(int i=0; i<=maxIndex && found<=index; i++){
@@ -208,48 +249,125 @@ String getValue(String data, char separator, int index) {
 
 }
 
-void driveRover(int dir, int rt_spd, int lt_speed) {
-
+void twistRover(int dir, int spd) {
+  
   switch(dir) {
 
   case 0:
-  
+
     wheel_fl.write(NEUTRAL);
     wheel_cl.write(NEUTRAL);
     wheel_bl.write(NEUTRAL);
-    
+
     wheel_fr.write(NEUTRAL);
     wheel_cr.write(NEUTRAL);    
     wheel_br.write(NEUTRAL);
-    
+
     break;
 
   case 1:
-  
-    wheel_fl.write(NEUTRAL - lt_spd);
-    wheel_cl.write(NEUTRAL - lt_spd);
-    wheel_bl.write(NEUTRAL - lt_spd);
-    
-    wheel_fr.write(NEUTRAL + rt_spd);
-    wheel_cr.write(NEUTRAL + rt_spd);    
-    wheel_br.write(NEUTRAL + rt_spd);
-    
+
+    wheel_fl.write(NEUTRAL - spd);
+    wheel_cl.write(NEUTRAL);
+    wheel_bl.write(NEUTRAL - spd);
+
+    wheel_fr.write(NEUTRAL - spd);
+    wheel_cr.write(NEUTRAL);    
+    wheel_br.write(NEUTRAL - spd);
+
     break;
 
   case 2:
-  
-    wheel_fl.write(NEUTRAL + lt_spd);
-    wheel_cl.write(NEUTRAL + lt_spd);
-    wheel_bl.write(NEUTRAL + lt_spd);
-    
-    wheel_fr.write(NEUTRAL - rt_spd);
-    wheel_cr.write(NEUTRAL - rt_spd);    
-    wheel_br.write(NEUTRAL - rt_spd);
-      
+
+    wheel_fl.write(NEUTRAL + spd);
+    wheel_cl.write(NEUTRAL);
+    wheel_bl.write(NEUTRAL + spd);
+
+    wheel_fr.write(NEUTRAL + spd);
+    wheel_cr.write(NEUTRAL);    
+    wheel_br.write(NEUTRAL + spd);
+
     break;
 
   }
 
+}
+
+void driveRover(int dir, int rt_spd, int lt_spd) {
+  
+  switch(dir) {
+
+  case 0:
+
+    wheel_fl.write(NEUTRAL);
+    wheel_cl.write(NEUTRAL);
+    wheel_bl.write(NEUTRAL);
+
+    wheel_fr.write(NEUTRAL);
+    wheel_cr.write(NEUTRAL);    
+    wheel_br.write(NEUTRAL);
+
+    break;
+
+  case 1:
+
+    wheel_fl.write(NEUTRAL - lt_spd);
+    wheel_cl.write(NEUTRAL - lt_spd);
+    wheel_bl.write(NEUTRAL - lt_spd);
+
+    wheel_fr.write(NEUTRAL + rt_spd);
+    wheel_cr.write(NEUTRAL + rt_spd);    
+    wheel_br.write(NEUTRAL + rt_spd);
+
+    break;
+
+  case 2:
+
+    wheel_fl.write(NEUTRAL + lt_spd);
+    wheel_cl.write(NEUTRAL + lt_spd);
+    wheel_bl.write(NEUTRAL + lt_spd);
+
+    wheel_fr.write(NEUTRAL - rt_spd);
+    wheel_cr.write(NEUTRAL - rt_spd);    
+    wheel_br.write(NEUTRAL - rt_spd);
+
+    break;
+
+  }
+
+}
+
+void moveJoint(int joint_num, int dir) {
+ 
+ int increment = 0;
+ int joint_speed = 0;
+ 
+ if (dir == 1) {
+   joint_speed = -10;
+ }
+ else if (dir == 2) {
+   joint_speed = 10;
+ }
+  
+ switch(joint_num) {
+  
+  case 1:
+    arm_1.write(NEUTRAL + joint_speed);
+    
+  case 2:
+    arm_2.write(NEUTRAL + joint_speed);
+    
+  case 3:
+    arm_3.write(NEUTRAL + joint_speed);    
+
+  case 4:
+    arm_4.write(NEUTRAL + joint_speed);  
+  
+  case 5:
+    arm_5.write(NEUTRAL + joint_speed);    
+   
+ }
+  
 }
 
 void smoothStop(int prev_dir, int prev_spd) {
@@ -258,7 +376,7 @@ void smoothStop(int prev_dir, int prev_spd) {
     driveRover(prev_dir, i, i);
     delay(25);
   }
-  
+
   while (Serial.available()) Serial.read();
 
 }
@@ -274,17 +392,20 @@ void smoothStart(int dir, int spd, int prev_spd) {
 
 void getGPS(){
   bool newdata = false;
-  unsigned long start = millis();
   // Every 1 seconds we print an update
-  while (millis() - start < 1000)
+  if(millis() - time_at_last_GPS_update > 1000) // only update once per second
   {
+    Serial.println("gps update");
     if (feedgps ()){
+      Serial.println("feed is true");
       newdata = true; 
     }
   }
   if (newdata)
   {
     gpsdump(gps);
+    time_at_last_GPS_update = millis();
+    Serial.println("Dumping");
   }
 }
 
@@ -307,4 +428,5 @@ void gpsdump(TinyGPS &gps)
     feedgps(); // If we don't feed the gps during this long routine, we may drop characters and get checksum errors
   }
 }
+
 
