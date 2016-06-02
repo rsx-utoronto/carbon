@@ -78,7 +78,7 @@ void setup() {
   wheel_cl.attach(11);
   wheel_cr.attach(10);
   wheel_bl.attach(9);
-  wheel_br.attach(8);
+  /*wheel_br.attach(8); */ 
 
   // Arm signal setup
   arm_1.attach(7);
@@ -343,10 +343,10 @@ void moveJoint(int joint_num, int dir) {
  int joint_speed = 0;
  
  if (dir == 1) {
-   joint_speed = -10;
+   joint_speed = -20;
  }
  else if (dir == 2) {
-   joint_speed = 10;
+   joint_speed = 20;
  }
   
  switch(joint_num) {
@@ -405,7 +405,7 @@ void getGPS(){
   {
     gpsdump(gps);
     time_at_last_GPS_update = millis();
-    Serial.println("D
+    Serial.println("");
   }
 }
 
