@@ -109,6 +109,15 @@ void setup() {
   compass.setOffset(0, 0);
 }
 
+// count how many times ch appears in str
+int countOccurences(String str, char ch){
+  result = 0;
+  for(int i=0; i<str.length; i++)
+    if (str[i] == ch)
+      result++;
+  return result;
+}
+
 void loop() {
 
   ////////////////////
@@ -135,6 +144,7 @@ void loop() {
     }
 
     if (received == '>') {
+      Serial.println("Amount of data received: ", countOccurences(inData, ',') + 1); // debug, to see if we're losing/ gaining packets
 
       prev_spd = spd;
       prev_dir = dir;

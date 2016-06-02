@@ -7,6 +7,8 @@ import pygame
 import math
 
 # sudo apt-get install python-imaging-tk
+# -or- pip install pillow
+
 from PIL import ImageTk
 from PIL import Image
 
@@ -56,7 +58,7 @@ def joystickGUIUpdate(axis_x, axis_y, axis_twist, axis_throttle):
         100, 90 - 80 * axis_throttle, 150, 90)
 
 def joystickPump():
-
+    JOYSTICK_THRESHOLD = 0.03
     TOPSPEED = 25
     direction = 0
 
@@ -82,18 +84,18 @@ def joystickPump():
         axis_twist,
         axis_throttle)
 
-    if axis_y > 0.01: direction = 2 # Drive forward
-    elif axis_y < -0.01: direction = 1 # Drive backwards
+    if axis_y > JOYSTICK_THRESHOLD: direction = 2 # Drive forward
+    elif axis_y < -JOYSTICK_THRESHOLD: direction = 1 # Drive backwards
     else: direction = "0" # Don't move
 
     speed = int(TOPSPEED * abs(axis_y))
     left_speed = speed
     right_speed = speed
 
-    if axis_x > 0.01:
+    if axis_x > JOYSTICK_THRESHOLD:
         right_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
 
-    elif axis_x < -0.01:
+    elif axis_x < -JOYSTICK_THRESHOLD:
         left_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
 
     twist_dir = 0
