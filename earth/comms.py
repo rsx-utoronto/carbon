@@ -16,8 +16,8 @@ from PIL import Image
 ######## BASIC CONFIG ########
 ##############################
 
-SERIAL_ON = True
-JOYSTICK_ON = True
+SERIAL_ON = False
+JOYSTICK_ON = False 
 KEYBOARD_ON = True
 
 ser = None

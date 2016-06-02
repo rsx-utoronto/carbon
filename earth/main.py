@@ -1,4 +1,5 @@
 from Tkinter import *
+import ttk 
 import time
 import serial
 import pygame
@@ -19,13 +20,24 @@ root = Tk()
 root.title('MRSX-3 Carbon GUI')
 
 # Callback methods
+def set_serial_port(event):
+    global ser_serial_port
+    prev_port = ser_serial_port
+    try: 
+        ser_serial_port = serialport.get() 
+        ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
+        print "Serial port was successfully changed" 
+        ser.flushInput()
+    except OSError as e: 
+        print "Serial port was not updated", e
+        ser_serial_port = prev_port
+        ser = serial.Serial(ser_serial_port, ser_baud, timeout=0.01)
+        ser.flushInput()
 
-def quit():
-    root.quit()
 
 # Setting up the GPS panel
 display_gps = Canvas(root, width = 1000, height = 1000, background = 'white')
-display_gps.pack(side = LEFT)
+display_gps.pack(side=LEFT)
 
 # Setting up the rover in the GPS panel
 global rover, rover_image
@@ -36,9 +48,17 @@ heading = None
 # Setting up the UI buttons frame
 button_panel = Frame(root, width = 400, height = 40)
 button_panel.pack()
+        
+serialport = StringVar() 
+serialselector = ttk.Combobox(button_panel, width=200, textvariable=serialport) 
+serialselector.bind( '<<ComboboxSelected>>', lambda event: set_serial_port(event)) 
+serialselector['values'] = ('/dev/ttyUSB0', '/dev/ttyUSB1',) 
+serialselector['state'] = 'normal' # not readonly
+serialselector.current(0)
+serialselector.pack() 
 
-redbutton = Button(button_panel, text = "Quit", width = 400, command = quit)
-redbutton.pack( side = LEFT)
+redbutton = Button(button_panel, text = "Quit", width = 200, command=root.quit)
+redbutton.pack()
 
 # Setting up the joystick display panel
 display_joystick = Canvas(root, width = 400, height = 100, background = 'white')
@@ -67,7 +87,7 @@ display_sensors.pack()
 # Setting up the box where the raw telemetry data will be listed
 display_raw = Listbox(root, background = 'gray')
 display_raw.config(width = 50, height = 25)
-display_raw.pack()
+display_raw.pack(side=LEFT)
 
 # Rover positioning on map
 
