@@ -173,13 +173,13 @@ def set_serial_port(event):
     prev_port = ser_serial_port
     try: 
         ser_serial_port = serialport.get() 
-        # ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
+        ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
         print "Serial port was successfully changed" 
         ser.flushInput()
     except OSError as e: 
         print "Serial port was not updated", e
         ser_serial_port = prev_port
-        # ser = serial.Serial(ser_serial_port, ser_baud, timeout=0.01)
+        ser = serial.Serial(ser_serial_port, ser_baud, timeout=0.01)
         ser.flushInput()
 
 

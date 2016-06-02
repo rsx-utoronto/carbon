@@ -61,7 +61,7 @@ int spd, rt_spd, lt_spd, dir, twst_dir, twst_spd, prev_spd, prev_dir = 0;
 
 // Arm control variables
 int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val, hand_1_val, hand_2_val, hand_3_val;
-int hand_1_pos, hand_2_pos, hand_3_pos = 0;
+int hand_1_pos, hand_2_pos, hand_3_pos = 100;
 
 // Sensor variables
 HMC5883L compass;
@@ -93,15 +93,15 @@ void setup() {
   wheel_fr.attach(39);
   wheel_cl.attach(38);
   wheel_cr.attach(10);
-  wheel_bl.attach(9);
-  wheel_br.attach(8);
+  // wheel_bl.attach(9);
+  // wheel_br.attach(8);
 
   // Arm signal setup
   arm_1.attach(7);
   arm_2.attach(6);
   arm_3.attach(5);
   arm_4.attach(4);
-  arm_5.attach(3);
+  arm_5.attach(30);
 
   hand_1.attach(40);
   hand_2.attach(41);
@@ -134,15 +134,13 @@ void loop() {
   ////////////////////
   ////// INPUT ///////
   ////////////////////
-
   while (Serial1.available() > 0)
   {
     char received = Serial1.read();
-
+    
     if (received == '<') {
       keep_reading = true;
       inData = "";
-
       if (sent_counter >= 5) {
         sent_counter = 0;
         sendData();
@@ -425,11 +423,11 @@ void moveHand(int hand_num, int dir) {
 
   int increment = 0;
 
-  if (dir == 1) {
-    increment = -2;
+  if (dir == 1) { 
+    increment = -5;
   }
   else if (dir == 2) {
-    increment = 2;
+    increment = 5;
   }
 
   switch(hand_num) {
@@ -439,18 +437,21 @@ void moveHand(int hand_num, int dir) {
     if (hand_1_pos > hand_upper_limit) { hand_1_pos = hand_upper_limit; }
     else if (hand_1_pos < hand_lower_limit) { hand_1_pos = hand_lower_limit; }
     hand_1.write(hand_1_pos);
+    break; 
 
   case 2:
     hand_2_pos += increment;
     if (hand_2_pos > hand_upper_limit) { hand_2_pos = hand_upper_limit; }
     else if (hand_2_pos < hand_lower_limit) { hand_2_pos = hand_lower_limit; }
     hand_2.write(hand_2_pos);
+    break; 
 
   case 3:
     hand_3_pos += increment;
     if (hand_3_pos > hand_upper_limit) { hand_3_pos = hand_upper_limit; }
     else if (hand_3_pos < hand_lower_limit) { hand_3_pos = hand_lower_limit; }
     hand_3.write(hand_3_pos);
+    break; 
 
   }
 }
@@ -479,7 +480,7 @@ void readSensors() {
     sensor_data_2 = analogRead(A2);
     sensor_data_3 = analogRead(A3);
 }
-
+/* 
 void getGPS(){
   bool newdata = false;
   // Every 1 seconds we print an update
@@ -517,7 +518,22 @@ void gpsdump(TinyGPS &gps)
   {
     feedgps(); // If we don't feed the gps during this long routine, we may drop characters and get checksum errors
   }
+}*/ 
+
+void getGPS(){
+ while(Serial2.available())     // While there is data on the RX pin...
+ {
+     int c = Serial2.read();    // load the data into a variable...
+     if(gps.encode(c))      // if there is a new valid sentence...
+     {
+       gpsdump(gps);         // then grab the data.
+       Serial.println("dumped gps data");
+     }
+ }
 }
-
-
-
+void gpsdump(TinyGPS &gps)
+{
+ gps.get_position(&lat, &lon);
+ LAT = lat;
+ LON = lon;
+}
