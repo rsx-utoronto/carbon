@@ -79,8 +79,8 @@ void setup() {
 
   // Drive signal setup
   wheel_fl.attach(13);
-  wheel_fr.attach(12);
-  wheel_cl.attach(11);
+  wheel_fr.attach(39);
+  wheel_cl.attach(38);
   wheel_cr.attach(10);
   wheel_bl.attach(9);
   wheel_br.attach(8);
@@ -92,9 +92,9 @@ void setup() {
   arm_4.attach(4);
   arm_5.attach(3);
 
-  hand_1.attach(44);
-  hand_2.attach(45);
-  hand_3.attach(46);
+  hand_1.attach(40);
+  hand_2.attach(41);
+  hand_3.attach(42);
 
   // Compass setup
   while (!compass.begin()) {
