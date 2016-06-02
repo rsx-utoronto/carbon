@@ -30,6 +30,9 @@ boolean keep_reading = false;
 int sent_counter = 0;
 unsigned int time_at_last_GPS_update = 0;
 
+// Sensor pins
+int sensor_data_0, sensor_data_1, sensor_data_2, sensor_data_3;
+
 // Motor pins
 Servo wheel_fl;
 Servo wheel_fr;
@@ -70,12 +73,20 @@ void getGPS();
 long lat, lon;
 float LAT, LON;
 
+
+
 void setup() {
 
   // Starting serial connections
   Serial.begin(9600); // Local debugging
   Serial1.begin(9600); // Main telemetry IO
   Serial2.begin(9600); // GPS module
+
+  // Set up sensors
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+  pinMode(A3, INPUT);
 
   // Drive signal setup
   wheel_fl.attach(13);
@@ -111,8 +122,8 @@ void setup() {
 
 // count how many times ch appears in str
 int countOccurences(String str, char ch){
-  result = 0;
-  for(int i=0; i<str.length; i++)
+  int result = 0;
+  for(int i=0; i<str.length(); i++)
     if (str[i] == ch)
       result++;
   return result;
@@ -144,7 +155,8 @@ void loop() {
     }
 
     if (received == '>') {
-      Serial.println("Amount of data received: ", countOccurences(inData, ',') + 1); // debug, to see if we're losing/ gaining packets
+      Serial.print("Amount of data received: ");
+      Serial.println(countOccurences(inData, ',') + 1); // debug, to see if we're losing/ gaining packets
 
       prev_spd = spd;
       prev_dir = dir;
@@ -236,20 +248,39 @@ void sendData() {
   gps.get_position(&lat, &lon, &fix_age);
   getGPS();
 
-  // DATA PACKET
-
+  // DATA PACKET, GPS
+  Serial1.print("GPS,");
   Serial1.print(LAT/100000,7);
   Serial1.print(",");
   Serial1.print(LON/100000,7);
   Serial1.print(",");
   Serial1.println(headingDegrees);
 
+  Serial.print("GPS,");
   Serial.print(LAT/100000,7);
   Serial.print(",");
   Serial.print(LON/100000,7);
   Serial.print(",");
   Serial.println(headingDegrees);
 
+  // DATA PACKET, SENSORS
+  Serial1.print("SENSORS,");
+  Serial1.print(sensor_data_0);
+  Serial1.print(",");
+  Serial1.print(sensor_data_1);
+  Serial1.print(",");
+  Serial1.print(sensor_data_2);
+  Serial1.print(",");
+  Serial1.println(sensor_data_3);
+  
+  Serial.print("SENSORS,");
+  Serial.print(sensor_data_0);
+  Serial.print(",");
+  Serial.print(sensor_data_1);
+  Serial.print(",");
+  Serial.print(sensor_data_2);
+  Serial.print(",");
+  Serial.println(sensor_data_3);
 }
 
 // Pass in a string, seperator, and index you want, and get that value
@@ -271,7 +302,6 @@ String getValue(String data, char separator, int index) {
   }
 
   return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
-
 }
 
 void twistRover(int dir, int spd) {
@@ -313,9 +343,7 @@ void twistRover(int dir, int spd) {
     wheel_br.write(NEUTRAL + spd);
 
     break;
-
   }
-
 }
 
 void driveRover(int dir, int rt_spd, int lt_spd) {
@@ -390,6 +418,7 @@ void moveJoint(int joint_num, int dir) {
   case 5:
     arm_5.write(NEUTRAL + joint_speed);
     break;
+  }
 }
 
 void moveHand(int hand_num, int dir) {
@@ -434,7 +463,6 @@ void smoothStop(int prev_dir, int prev_spd) {
   }
 
   while (Serial.available()) Serial.read();
-
 }
 
 void smoothStart(int dir, int spd, int prev_spd) {
@@ -443,7 +471,13 @@ void smoothStart(int dir, int spd, int prev_spd) {
     driveRover(dir, i, i);
     delay(20);
   }
+}
 
+void readSensors() {
+    sensor_data_0 = analogRead(A0);
+    sensor_data_1 = analogRead(A1);
+    sensor_data_2 = analogRead(A2);
+    sensor_data_3 = analogRead(A3);
 }
 
 void getGPS(){
