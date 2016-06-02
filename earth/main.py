@@ -53,7 +53,7 @@ serialport = StringVar()
 serialselector = ttk.Combobox(button_panel, width=200, textvariable=serialport) 
 serialselector.bind( '<<ComboboxSelected>>', lambda event: set_serial_port(event)) 
 serialselector['values'] = ('/dev/ttyUSB0', '/dev/ttyUSB1',) 
-serialselector['state'] = 'normal' # not readonly
+serialselector['state'] = 'normal' # not readonly. still doesn't work, idk 
 serialselector.current(0)
 serialselector.pack() 
 
@@ -193,13 +193,13 @@ def task():
     if SERIAL_ON:
 
         ser_data = ser.readline().replace('\r\n','').split(',')
-        if len(ser_data) > 2:
+        if len(ser_data) >= 4 and ser_data[0] == 'GPS':
             display_raw.insert(0, str(ser_data))
 
             try:
-                latitude = round(float(ser_data[0]), 5)
-                longitude = round(float(ser_data[1]), 5)
-                heading = int(float(ser_data[2]))
+                latitude = round(float(ser_data[1]), 5)
+                longitude = round(float(ser_data[2]), 5)
+                heading = int(float(ser_data[3]))
 
                 if lat_start == 0 and long_start == 0:
                         lat_start = latitude
@@ -212,7 +212,12 @@ def task():
 
             except Exception as e:
                 print e
-                pass
+        elif len(ser_data) >= 5 and ser_data[0] == 'SENSORS':
+            try: 
+                sensor_data = ser_data[1:5]
+                print "sensors", sensor_data
+            except Exception as e: 
+                print e
 
     # Compile packet of data to send
     commandSend()
