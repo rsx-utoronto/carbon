@@ -16,7 +16,7 @@ from PIL import Image
 
 SERIAL_ON = True
 GPS_ON = False
-JOYSTICK_ON = True
+JOYSTICK_ON = False
 KEYBOARD_ON = True
 
 global gps

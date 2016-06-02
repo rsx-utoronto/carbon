@@ -26,7 +26,7 @@ joystick = None
 gps_serial_port = '/dev/ttyACM0'
 gps_baud = 9600
 
-ser_serial_port = '/dev/ttyUSB1'
+ser_serial_port = '/dev/ttyUSB0'
 ser_baud = 9600
 
 buffer_flushed = False
