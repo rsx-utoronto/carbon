@@ -9,7 +9,14 @@ s.listen(1)
 conn, addr = s.accept()
 print 'Connected by', addr
 while 1:
-    data = conn.recv(1024)
-    if not data: break
-    conn.sendall(data)
-conn.close()
+    try:
+	    print conn.recv(1024)
+    except Exception as e:
+       pass
+    # if not data: pass
+    try:
+        conn.sendall("Test")
+    except Exception as e:
+	     pass
+	
+# conn.close()
