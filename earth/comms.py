@@ -17,9 +17,13 @@ from PIL import Image
 ######## BASIC CONFIG ########
 ##############################
 
-SERIAL_ON = True    
-JOYSTICK_ON = False 
+SERIAL_ON = True 
+JOYSTICK_ON = True
 KEYBOARD_ON = True
+
+print "SERIAL: %s" % SERIAL_ON
+print "JOYSTICK: %s" % JOYSTICK_ON
+print "KEYBOARD: %s" % KEYBOARD_ON
 
 ser = None
 joystick = None
@@ -60,8 +64,9 @@ def joystickGUIUpdate(axis_x, axis_y, axis_twist, axis_throttle):
 
 def joystickPump():
     JOYSTICK_THRESHOLD = 0.03
-    TOPSPEED = 25
+    TOPSPEED = 10
     direction = 0
+    THROTTLE_FACTOR = 15
 
     pygame.event.pump()
 
@@ -87,17 +92,19 @@ def joystickPump():
 
     if axis_y > JOYSTICK_THRESHOLD: direction = 2 # Drive forward
     elif axis_y < -JOYSTICK_THRESHOLD: direction = 1 # Drive backwards
-    else: direction = "0" # Don't move
+    else: direction = 0 # Don't move
 
-    speed = int(TOPSPEED * abs(axis_y))
+    speed = int(TOPSPEED * abs(axis_y)) + axis_throttle * THROTTLE_FACTOR
     left_speed = speed
     right_speed = speed
 
     if axis_x > JOYSTICK_THRESHOLD:
-        right_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
+        #right_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
+        left_speed = speed * (1 - abs(axis_x))
 
     elif axis_x < -JOYSTICK_THRESHOLD:
-        left_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
+        #left_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
+        right_speed = speed * (1 - abs(axis_x))
 
     twist_dir = 0
     twist_speed = abs(axis_twist) * TOPSPEED
@@ -107,13 +114,15 @@ def joystickPump():
 
     elif axis_twist < -0.25:
         twist_dir = 2
+    else: 
+        twist_dir = 0 
 
     joystick_input_array[0] = direction
     joystick_input_array[1] = round(right_speed, 2)
     joystick_input_array[2] = round(left_speed, 2)
-    joystick_input_array[3] = speed
-    joystick_input_array[4] = twist_dir
-    joystick_input_array[5] = twist_speed
+    joystick_input_array[3] = round(speed, 2)
+    joystick_input_array[4] = round(twist_dir, 2)
+    joystick_input_array[5] = round(twist_speed, 2)
 
 # def clearInputArrays():
 
@@ -153,8 +162,9 @@ def commandSend():
     command = "<%s,%s>" % (joystick_csv, keyboard_csv)
 
     if SERIAL_ON:
-        print "Writing", command    
         ser.write(command)
+        
+    print "Writing: ", command    
 
     # clearInputArrays()
     
@@ -173,13 +183,13 @@ def set_serial_port(event):
     prev_port = ser_serial_port
     try: 
         ser_serial_port = serialport.get() 
-        ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
+        # ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
         print "Serial port was successfully changed" 
         ser.flushInput()
     except OSError as e: 
         print "Serial port was not updated", e
         ser_serial_port = prev_port
-        ser = serial.Serial(ser_serial_port, ser_baud, timeout=0.01)
+        # ser = serial.Serial(ser_serial_port, ser_baud, timeout=0.01)
         ser.flushInput()
 
 
