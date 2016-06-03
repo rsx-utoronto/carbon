@@ -9,8 +9,8 @@ void getGPS();
 long lat, lon;
 float LAT, LON;
 void setup(){
-  Serial1.begin(9600); // GPS module
-  Serial.begin(100);
+  Serial2.begin(9600); // GPS module
+  Serial.begin(9600);
 }
 void loop(){
   long lat, lon;
@@ -57,9 +57,9 @@ void getGPS(){
   }
 }
 bool feedgps(){
-  while (Serial1.available())
+  while (Serial2.available())
   {
-    if (gps.encode(Serial1.read()))
+    if (gps.encode(Serial2.read()))
       return true;
   }
   return 0;

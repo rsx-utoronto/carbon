@@ -1,0 +1,54 @@
+RSX Checklist:
+
+Ground Station (antenna): Hudson, Chris, Paul
+1. Assemble the antenna
+2. Make sure parabolic antenna is plugged in
+3. Connect antenna control system
+
+Ground Station (control station) - Kramay setup (People sign into computers), Rahul and Chris 2 doing telemetry
+1. Check telemetry (data and video)
+2. Turn on the electronics switch - make sure antennas are plugged in (2.4GHz and 900MHz)
+3. Check 2 pan and tilt 2.4 GHz video feeds
+4. Hudson, Kramay, Chris, and RSX computers fuly charged
+5. Kramays computer - rearview camera (analog) - make sure the feed is flipped
+6. Hudsons computer - Pan and Tilt 1
+7. Chriss computer - Pan and Tilt 2
+8. RSX computer - GUI
+
+
+Rover - Askar, Fausto, Abishek, Ramsin
+1. Plug in antennas
+2. Turn on electronics power and fans
+3. Check connection between ground station and rover
+4. Plug in station power
+5. Check camera footage
+6. Turn on motor power
+7. Test drive
+8. Plug in servo battery
+9. Test arm
+
+
+Other Tasks:
+1. Make sure walkie-talikes are fully charged
+2. 
+
+Tools:
+1. ratchet
+2. USB extension cable
+3. Mallet 
+4. Epoxy
+5. Gorilla tape
+6. Spare tires and hubs
+7. Drill and drill bits
+8. Wd-40
+9. Grease
+10. Joystick
+11. Duct tape
+12. Grippy grips
+13. walkie-talkies
+14. multimeter
+15. screwdrivers
+16. spare batteries
+17. scissors and exacto knives
+18. drone
+19. 

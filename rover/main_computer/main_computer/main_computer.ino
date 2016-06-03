@@ -28,7 +28,7 @@
 String inData;
 boolean keep_reading = false;
 int sent_counter = 0;
-unsigned int time_at_last_GPS_update = 0;
+int gps_counter = 0;
 
 // Sensor pins
 int sensor_data_0, sensor_data_1, sensor_data_2, sensor_data_3;
@@ -61,7 +61,9 @@ int spd, rt_spd, lt_spd, dir, twst_dir, twst_spd, prev_spd, prev_dir = 0;
 
 // Arm control variables
 int arm_1_val, arm_2_val, arm_3_val, arm_4_val, arm_5_val, hand_1_val, hand_2_val, hand_3_val;
-int hand_1_pos, hand_2_pos, hand_3_pos = 100;
+int hand_1_pos = 90;  
+int hand_2_pos = 90; 
+int hand_3_pos = 150;
 
 // Sensor variables
 HMC5883L compass;
@@ -73,14 +75,14 @@ void getGPS();
 long lat, lon;
 float LAT, LON;
 
-
-
 void setup() {
 
   // Starting serial connections
   Serial.begin(9600); // Local debugging
   Serial1.begin(9600); // Main telemetry IO
   Serial2.begin(9600); // GPS module
+  
+  Serial.println("starting"); 
 
   // Set up sensors
   pinMode(A0, INPUT);
@@ -111,13 +113,17 @@ void setup() {
   while (!compass.begin()) {
     Serial.println("No compass detected");
     delay(500);
-  }
+  } 
+  
+  Serial.println("done compass"); 
 
   compass.setRange(HMC5883L_RANGE_1_3GA);
   compass.setMeasurementMode(HMC5883L_CONTINOUS);
   compass.setDataRate(HMC5883L_DATARATE_30HZ);
   compass.setSamples(HMC5883L_SAMPLES_8);
   compass.setOffset(0, 0);
+  
+  Serial.println("done more compass"); 
 }
 
 // count how many times ch appears in str
@@ -134,19 +140,31 @@ void loop() {
   ////////////////////
   ////// INPUT ///////
   ////////////////////
+  
   while (Serial1.available() > 0)
   {
     char received = Serial1.read();
+    Serial.println(received); 
     
     if (received == '<') {
       keep_reading = true;
       inData = "";
+      
       if (sent_counter >= 5) {
+        readSensors(); 
         sent_counter = 0;
         sendData();
       }
       else {
         sent_counter++;
+      }     
+      
+      if (gps_counter >= 25) {
+        gps_counter = 0;
+        gpsUpdate();
+      }
+      else {
+        gps_counter++;
       }
 
       continue;
@@ -237,15 +255,6 @@ void sendData() {
 
   float headingDegrees = heading * 180/M_PI;
 
-  // GPS CODE
-
-  long lat, lon;
-  unsigned long fix_age, time, date, speed, course;
-  unsigned long chars;
-  unsigned short sentences, failed_checksum;
-  gps.get_position(&lat, &lon, &fix_age);
-  getGPS();
-
   // DATA PACKET, GPS
   Serial1.print("GPS,");
   Serial1.print(LAT/100000,7);
@@ -279,6 +288,19 @@ void sendData() {
   Serial.print(sensor_data_2);
   Serial.print(",");
   Serial.println(sensor_data_3);
+}
+
+void gpsUpdate() {
+ 
+  // GPS CODE
+
+  long lat, lon;
+  unsigned long fix_age, time, date, speed, course;
+  unsigned long chars;
+  unsigned short sentences, failed_checksum;
+  gps.get_position(&lat, &lon, &fix_age);
+  getGPS(); 
+  
 }
 
 // Pass in a string, seperator, and index you want, and get that value
@@ -480,26 +502,22 @@ void readSensors() {
     sensor_data_2 = analogRead(A2);
     sensor_data_3 = analogRead(A3);
 }
-/* 
+
 void getGPS(){
   bool newdata = false;
+  unsigned long start = millis();
   // Every 1 seconds we print an update
-  if(millis() - time_at_last_GPS_update > 1000) // only update once per second
+  while (millis() - start < 1000)
   {
-    Serial.println("gps update");
     if (feedgps ()){
-      Serial.println("feed is true");
-      newdata = true;
+      newdata = true; 
     }
   }
   if (newdata)
   {
     gpsdump(gps);
-    time_at_last_GPS_update = millis();
-    Serial.println("D");
   }
 }
-
 bool feedgps(){
   while (Serial2.available())
   {
@@ -508,7 +526,6 @@ bool feedgps(){
   }
   return 0;
 }
-
 void gpsdump(TinyGPS &gps)
 {
   //byte month, day, hour, minute, second, hundredths;
@@ -518,22 +535,4 @@ void gpsdump(TinyGPS &gps)
   {
     feedgps(); // If we don't feed the gps during this long routine, we may drop characters and get checksum errors
   }
-}*/ 
-
-void getGPS(){
- while(Serial2.available())     // While there is data on the RX pin...
- {
-     int c = Serial2.read();    // load the data into a variable...
-     if(gps.encode(c))      // if there is a new valid sentence...
-     {
-       gpsdump(gps);         // then grab the data.
-       Serial.println("dumped gps data");
-     }
- }
-}
-void gpsdump(TinyGPS &gps)
-{
- gps.get_position(&lat, &lon);
- LAT = lat;
- LON = lon;
 }
