@@ -258,7 +258,7 @@ display_raw.pack(side=LEFT)
 # Rover positioning on map
 
 GPS_MAPPING_RES = 100000
-ROVER_DIMENSION = 10
+ROVER_DIMENSION = 5
 ROVER_START_X = 475
 ROVER_START_Y = 475
 
@@ -277,7 +277,7 @@ def plot_point_on_map(name, colour, latitude, longitude, heading = 0):
         except Exception as e:
             pass
 
-        image = Image.open('../assets/rover.png')
+        image = Image.open('rover_dot.png')
         angle = heading
 
         rover_image = ImageTk.PhotoImage(image.rotate(angle))
@@ -320,6 +320,8 @@ def plot_waypoints(filename):
         name = data[0]
         latitude = float(data[1])
         longitude = float(data[2])
+        
+        print data
 
         plot_point_on_map(name, 'green', latitude, longitude)
 
@@ -424,6 +426,23 @@ def task():
                 print "sensors", sensor_data
             except Exception as e: 
                 print e
+                
+        elif len(data) >= 3 and data[0] == 'GPSP':
+            try:
+                latitude = round(float(data[1]), 5)
+                longitude = round(float(data[2]), 5)
+
+                if lat_start == 0.0 and long_start == 0.0:
+                        lat_start = latitude
+                        long_start = longitude
+                        plot_waypoints('terrain.waypoints')
+
+                else:
+                    plot_point_on_map('rover', 'black', latitude, longitude, heading = heading)
+                    plot_point_on_map('path', 'gray', latitude, longitude)
+
+            except Exception as e:
+                print e            
 
     # Compile packet of data to send
     commandSend()
