@@ -13,11 +13,14 @@ import math
 from PIL import ImageTk
 from PIL import Image
 
+import socket, select, string, sys
+
 ##############################
 ######## BASIC CONFIG ########
 ##############################
 
-SERIAL_ON = True 
+SERIAL_ON = False 
+SOCKET_ON = True
 JOYSTICK_ON = True
 KEYBOARD_ON = True
 
@@ -27,10 +30,15 @@ print "KEYBOARD: %s" % KEYBOARD_ON
 
 ser = None
 joystick = None
+sock = None
 
 #TODO Try multiple serial ports
 ser_serial_port = '/dev/ttyUSB0'
 ser_baud = 9600
+
+# socket settings
+host = '192.168.1.109'
+port = 5000
 
 buffer_flushed = False
 
@@ -99,11 +107,9 @@ def joystickPump():
     right_speed = speed
 
     if axis_x > JOYSTICK_THRESHOLD:
-        #right_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
         left_speed = speed * (1 - abs(axis_x))
 
     elif axis_x < -JOYSTICK_THRESHOLD:
-        #left_speed = speed * (1 - math.pow(abs(axis_x), 3.5)) + 5
         right_speed = speed * (1 - abs(axis_x))
 
     twist_dir = 0
@@ -111,7 +117,6 @@ def joystickPump():
 
     if axis_twist > 0.25:
         twist_dir = 1
-
     elif axis_twist < -0.25:
         twist_dir = 2
     else: 
@@ -163,6 +168,9 @@ def commandSend():
 
     if SERIAL_ON:
         ser.write(command)
+        
+    if SOCKET_ON:
+        sock.send(command)
         
     print "Writing: ", command    
 
@@ -322,7 +330,7 @@ def plot_waypoints(filename):
 # Initialization task
 def init():
 
-    global ser, joystick
+    global ser, joystick, sock
 
     if JOYSTICK_ON:
 
@@ -332,16 +340,33 @@ def init():
         joystick.init()
 
     if SERIAL_ON:
-        print "initialize", ser_serial_port	
+        print "Serial initialize: ", ser_serial_port	
         ser = serial.Serial(ser_serial_port, ser_baud, timeout = 0.01)
         ser.flushInput()
         print (ser)
+        
+    if SOCKET_ON:
+        print "Socket initialize: ", host	    
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.2)
+     
+        try :
+            sock.connect((host, port))
+        except :
+            print 'Unable to connect to socket'
+            sys.exit()
+     
+        print 'Connected to remote socket host. Start sending commands!'
 
 # Main update loop task
 def task():
 
-    global ser, joystick, buffer_flushed
+    global ser, joystick, sock, buffer_flushed
     global lat_start, long_start, heading
+    
+    f = open('data', 'a')
+    
+    data = None
 
     if not buffer_flushed:
 
@@ -351,15 +376,35 @@ def task():
         buffer_flushed = True
 
     if SERIAL_ON:
-
-        ser_data = ser.readline().replace('\r\n','').split(',')
-        if len(ser_data) >= 4 and ser_data[0] == 'GPS':
-            display_raw.insert(0, str(ser_data))
-
+        data = ser.readline()
+        
+    if SOCKET_ON:
+        '''
+        socket_list = [sys.stdin, sock]
+        read_sockets, write_sockets, error_sockets = select.select(socket_list , [], [])
+         
+        for sock_in in read_sockets:
+            if sock_in == sock:
+                data = sock_in.recv(4096)  
+                print data 
+        '''
+        try:
+            data = sock.recv(1024)
+        except Exception as e:
+            pass
+            
+    if data:
+    
+        data = data.replace('\r\n','').split(',')
+        display_raw.insert(0, str(data))
+        f.write(str(data))
+        f.close()        
+        
+        if len(data) >= 4 and data[0] == 'GPS':
             try:
-                latitude = round(float(ser_data[1]), 5)
-                longitude = round(float(ser_data[2]), 5)
-                heading = int(float(ser_data[3]))
+                latitude = round(float(data[1]), 5)
+                longitude = round(float(data[2]), 5)
+                heading = int(float(data[3]))
 
                 if lat_start == 0 and long_start == 0:
                         lat_start = latitude
@@ -372,9 +417,10 @@ def task():
 
             except Exception as e:
                 print e
-        elif len(ser_data) >= 5 and ser_data[0] == 'SENSORS':
+                
+        elif len(data) >= 5 and data[0] == 'SENSORS':
             try: 
-                sensor_data = ser_data[1:5]
+                sensor_data = data[1:5]
                 print "sensors", sensor_data
             except Exception as e: 
                 print e

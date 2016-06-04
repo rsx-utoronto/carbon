@@ -24,7 +24,7 @@ if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # this has no effect, why ?
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(("0.0.0.0", PORT))
+    server_socket.bind(("192.168.1.109", PORT))
     server_socket.listen(10)
  
     # Add server socket to the list of readable connections
@@ -54,7 +54,7 @@ if __name__ == "__main__":
                     # a "Connection reset by peer" exception will be thrown
                     data = sock.recv(RECV_BUFFER)
                     if data:
-                        broadcast_data(sock, "\r" + '<' + str(sock.getpeername()) + '> ' + data)                
+                        broadcast_data(sock, data)                
                  
                 except:
                     broadcast_data(sock, "Client (%s, %s) is offline" % addr)
